@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "text": "The capture prototype will be reviewed next week, and notes will be sent by Friday.",
+    "source_segment_ids": ["seg-001", "seg-002"],
+    "confidence": 0.91
+  },
+  "decisions": [],
+  "action_items": [
+    {
+      "text": "Review the capture prototype and send notes",
+      "owner": "speaker-2",
+      "due_date": "Friday",
+      "source_segment_ids": ["seg-001", "seg-002"],
+      "confidence": 0.87
+    }
+  ]
+}

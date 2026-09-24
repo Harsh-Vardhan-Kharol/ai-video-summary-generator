@@ -47,10 +47,10 @@ individual delivery and enables idempotent processing.
 
 | Payload | Producer | Consumer | Minimum fields |
 | --- | --- | --- | --- |
-| `audio.chunk` | Capture | ASR | `sequence`, `started_at`, `duration_ms`, `audio_uri` or bytes reference |
-| `transcript.segment` | ASR | NLP, Storage | `segment_id`, `revision`, `is_final`, `start_ms`, `end_ms`, `speaker_label`, `text`, `asr_confidence` |
-| `summary.update` | NLP | Storage, Frontend | `summary_id`, `version`, `text`, `covered_segment_ids`, `is_final` |
-| `extraction.update` | NLP | Storage, Graph | `items[]` with `type`, `text`, `confidence`, `evidence_segment_ids` |
+| `audio.chunk` | Capture | ASR | `chunk_id`, `source`, `sequence`, `captured_at`, `sample_rate_hz`, `channels`, `encoding`, `duration_ms`, `audio_ref` |
+| `transcript.segment` | ASR | NLP, Storage | `segment_id`, `revision`, `is_final`, `start_ms`, `end_ms`, `speaker_id`, `text`, `asr_confidence` |
+| `summary.update` | NLP | Storage, Frontend | `summary_id`, `version`, `text`, `source_segment_ids`, `is_final` |
+| `extraction.update` | NLP | Storage, Graph | `items[]` with `item_id`, `type`, `text`, `confidence`, `evidence_segment_ids`, optional `owner` and `due_date` |
 | `index.ready` | Storage | RAG | `resource_type`, `resource_id`, `embedding_version` |
 | `rag.answer` | RAG | Frontend | `answer`, `citations[]`, `insufficient_evidence`, `retrieval_metadata` |
 
@@ -65,6 +65,12 @@ individual delivery and enables idempotent processing.
   status; it is never discarded silently.
 - The frontend never queries the graph or vector database directly. It uses a
   backend API so storage choices remain replaceable.
+
+The audio event uses the Week 1 capture proposal's `captured_at` and
+`audio_ref` names. ASR creates `segment_id` values; downstream modules must
+preserve them in `source_segment_ids` and `evidence_segment_ids`. These are
+version 1 contract proposals and can be revised together before the first
+persisted API payload is locked.
 
 ## Deployment boundary for the first sprint
 

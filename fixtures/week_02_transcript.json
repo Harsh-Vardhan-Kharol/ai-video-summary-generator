@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "session_id": "c86c629e-7f65-4d8a-9ec0-68bf9f94829f",
+  "segments": [
+    {
+      "segment_id": "seg-001",
+      "speaker_id": "speaker-1",
+      "start_ms": 0,
+      "end_ms": 1800,
+      "text": "Let's review the capture prototype next week.",
+      "asr_confidence": 0.97
+    },
+    {
+      "segment_id": "seg-002",
+      "speaker_id": "speaker-2",
+      "start_ms": 2200,
+      "end_ms": 3600,
+      "text": "I can review it by Friday and send notes.",
+      "asr_confidence": 0.94
+    }
+  ]
+}
