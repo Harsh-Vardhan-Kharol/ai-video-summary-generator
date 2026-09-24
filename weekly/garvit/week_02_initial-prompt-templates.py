@@ -9,15 +9,13 @@ What this script does:
 This module defines separate prompts for a concise session summary and evidence-linked extraction records, plus a small formatter that renders transcript segments into model-ready user messages without calling an external provider.
 """
 
-"""Initial provider-independent prompts for transcript summarization.
-
-The prompt text is intentionally kept separate from any LLM SDK. An adapter
-can pass the system and user messages to a chosen provider. These are drafts:
-Week 3 should test their factuality, coverage, attribution, readability, and
-output-schema adherence against fixtures before the format is finalized.
-"""
-
 from __future__ import annotations
+
+# Initial provider-independent prompts for transcript summarization. The
+# prompt text is intentionally separate from any LLM SDK. An adapter can pass
+# the system and user messages to a chosen provider. Week 3 evaluates these
+# drafts against fixture-based factuality, coverage, attribution, readability,
+# and output-schema checks before the format is finalized.
 
 import json
 from typing import Any, Mapping, Sequence
