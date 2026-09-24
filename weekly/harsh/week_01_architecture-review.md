@@ -138,8 +138,8 @@ knowledge graph used to improve cited RAG answers.
 
 ## Week-end integration status
 
-No executable pipeline exists in Week 1, and the other members' Week 1 files
-are not present in this checkout. Per `WEEKLY_INTEGRATION.md`, an integration
-script must only be created and run after all four members have pushed their
-weekly work to the shared repository. This design note supplies the baseline
-for that future integration contract.
+The four team Week 1 deliverables are now present in this checkout. The
+documentation integration confirms that their handoffs fit the architecture
+baseline. An executable audio-to-summary-to-storage-to-RAG runtime is not yet
+implemented; see `weekly/integration/week_01_summary.md` for the partial status,
+handoffs, and open dependencies.
