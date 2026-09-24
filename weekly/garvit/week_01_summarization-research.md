@@ -1,14 +1,3 @@
-"""
-Week 01 (10-08-2026 - 16-08-2026)
-Task: Research summarization approaches: extractive vs abstractive
-
-Why this matters:
-The project needs concise meeting summaries that preserve decisions and assigned work from noisy, speaker-labeled transcripts. Choosing an approach now informs the prompt templates and sample-transcript evaluation in Weeks 2-5, while keeping source evidence available for the downstream storage and RAG layers.
-
-What this script does:
-This note compares extractive and abstractive summarization for meeting transcripts and recommends an evidence-grounded hybrid for initial experiments.
-"""
-
 # Week 1 — extractive vs. abstractive summarization
 
 ## Scope
