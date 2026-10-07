@@ -104,3 +104,10 @@ metadata produced by the ASR module.
 
 **Output:** Revision-aware segment records, separate speaker attributions, and
 evidence references usable by storage, graph, and RAG modules.
+
+## Integration status
+
+The Week 8 integration runner validates the model independently and confirms
+that the current Dev schema preserves transcript revisions. It reports a
+partial result because speaker-attribution and derived-record migrations still
+need to be implemented in the production storage layer.

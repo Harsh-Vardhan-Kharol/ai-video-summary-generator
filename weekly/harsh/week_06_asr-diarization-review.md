@@ -121,6 +121,7 @@ Week 8; it does not modify another team member's ASR code.
 
 ## Integration status
 
-No Week 6 integration script was run. The shared-repository prerequisite in
-`WEEKLY_INTEGRATION.md` is unmet because the corresponding Dhruv, Garvit, and
-Dev weekly artifacts are absent from this checkout.
+The Week 6 integration runner validates this review against a representative
+event, the latest available capture/NLP artifacts, and Dev's revision-aware
+fixture schema. It reports a partial result because real Dhruv Week 6 output
+is not present in this checkout.

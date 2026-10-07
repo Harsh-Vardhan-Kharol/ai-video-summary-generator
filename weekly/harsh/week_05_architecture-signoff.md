@@ -71,11 +71,10 @@ keeps contract changes visible rather than silently breaking other modules.
 
 ## Integration status
 
-Architecture sign-off is complete as a repository baseline. An executable
-Week 5 integration check is intentionally not created: the required Week 5
-files from Dhruv, Garvit, and Dev are not present in this checkout, and
-`WEEKLY_INTEGRATION.md` requires their merged work before an integration run
-can be claimed.
+Architecture sign-off is complete as a repository baseline. The executable
+integration check uses the latest available teammate artifacts and marks the
+missing Week 5 artifacts and production stages as limitations rather than
+claiming a full multi-owner Sprint 2 implementation.
 
 ## WEEK OUTPUT CONTRACT
 

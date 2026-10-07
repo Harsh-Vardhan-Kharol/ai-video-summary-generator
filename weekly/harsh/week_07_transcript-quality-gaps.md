@@ -59,3 +59,10 @@ speaker labels, and confidence fields.
 
 **Output:** The quality-gap matrix and four validation scenarios. Week 8 uses
 these responses to revise the canonical transcript and provenance model.
+
+## Integration status
+
+The Week 7 integration runner exercises representative revision, uncertain
+speaker, and overlap cases through the current transcript upload boundary. It
+reports a partial result because real ASR quality measurements and durable
+quality metadata are not yet available.

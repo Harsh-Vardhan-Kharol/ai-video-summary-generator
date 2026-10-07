@@ -52,8 +52,8 @@ def main() -> int:
     print("[PASS] Harsh boundaries: audio and NLP contract fields align with Week 1 proposals")
 
     dhruv = load_weekly_module("week_02_dhruv", "weekly/dhruv/week_02_local_audio_capture.py")
-    dev = load_weekly_module("week_02_dev", "weekly/dev/week_02_fastapi-skeleton.py")
-    garvit = load_weekly_module("week_02_garvit", "weekly/garvit/week_02_prompt-templates.py")
+    dev = load_weekly_module("week_02_dev", "weekly/dev/fastapi-skeleton.py")
+    garvit = load_weekly_module("week_02_garvit", "weekly/garvit/week_02_initial-prompt-templates.py")
 
     transcript_fixture = json.loads((ROOT / "fixtures/week_02_transcript.json").read_text(encoding="utf-8"))
     transcript_segments = transcript_fixture["segments"]
