@@ -90,16 +90,19 @@ def load_fixture_handoff() -> tuple[list[dict], dict]:
 
 
 def check_garvit_latest(transcript: list[dict]) -> None:
-    module = load_module("week_05_garvit", "ml/nlp/week4_prompt_refinement.py")
-    failures = module.run_checks()
+    module = load_module(
+        "week_05_garvit",
+        "weekly/garvit/week_05_prompt-template-finalization.py",
+    )
+    failures = module.finalize_checks()
     if failures:
         raise AssertionError("; ".join(failures))
-    prompts = module.load_prompts()
+    prompts = module.prompts
     messages = prompts.build_summary_messages(transcript)
     extraction_messages = prompts.build_extraction_messages(transcript)
     print(f"[PASS] Garvit handoff: built {len(messages)} summary messages and {len(extraction_messages)} extraction messages")
-    print("[PASS] Garvit latest available artifact: prompt fields, evidence IDs, and input validation")
-    print("[KNOWN LIMITATION] Garvit Week 5 artifact is not present; using Week 4")
+    print(f"[PASS] Garvit Week 5: finalized prompt set v{prompts.PROMPT_SET_VERSION}, evidence IDs, and stable-input checks")
+    print("[KNOWN LIMITATION] Prompt contracts are validated against fixtures; no LLM output quality is measured")
 
 
 def check_dev_latest(transcript: list[dict], summary: dict) -> None:

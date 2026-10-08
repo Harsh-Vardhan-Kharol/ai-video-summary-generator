@@ -2,9 +2,9 @@
 Week 06 Integration Check
 
 Connects: Harsh's ASR/diarization contract-readiness review, Dhruv's latest
-capture reliability checks, Garvit's latest prompt-refinement checks, Dev's
+capture reliability checks, Garvit's fixture-backed Week 6 pipeline, Dev's
 revision-capable schema, and a representative transcript event.
-Still mocked: Dhruv's real early ASR/diarization output, production NLP,
+Still mocked: Dhruv's real early ASR/diarization output, LLM provider output,
 PostgreSQL/vector storage, graph/RAG services, and frontend delivery.
 
 Result: PARTIAL — the representative event passes the downstream contract
@@ -116,6 +116,9 @@ def canonical_segment() -> dict:
 
 
 def check_garvit_latest(segment: dict) -> None:
+    nlp_dir = ROOT / "ml" / "nlp"
+    if str(nlp_dir) not in sys.path:
+        sys.path.insert(0, str(nlp_dir))
     module = load_module("week_06_garvit", "ml/nlp/week4_prompt_refinement.py")
     failures = module.run_checks()
     if failures:
@@ -124,7 +127,30 @@ def check_garvit_latest(segment: dict) -> None:
     summary_messages = prompts.build_summary_messages([segment])
     extraction_messages = prompts.build_extraction_messages([segment])
     print(f"[PASS] Garvit handoff: final revision {segment['revision']} accepted by both prompt builders ({len(summary_messages)} + {len(extraction_messages)} messages)")
-    print("[PASS] Garvit latest available artifact: provisional input is rejected for durable extraction")
+    pipeline_module = load_module(
+        "week_06_garvit_pipeline", "ml/nlp/week6_summarization_pipeline.py"
+    )
+    fixture_responses = iter((
+        {
+            "text": "Priya will prepare the deployment checklist by Friday.",
+            "covered_segment_ids": [segment["segment_id"]],
+        },
+        {
+            "items": [{
+                "id": "week6-action-001",
+                "type": "action_item",
+                "text": "Priya will prepare the deployment checklist by Friday.",
+                "confidence": 0.95,
+                "evidence_segment_ids": [segment["segment_id"]],
+            }]
+        },
+    ))
+    pipeline = pipeline_module.SummarizationPipeline(
+        lambda _messages: json.dumps(next(fixture_responses))
+    )
+    result = pipeline.process([segment])
+    print(f"[PASS] Garvit Week 6 pipeline: validated {len(result['summary']['covered_segment_ids'])} summary evidence IDs and {len(result['extraction']['items'])} extraction item(s)")
+    print("[KNOWN LIMITATION] Deterministic mock responses are used; no LLM provider output is evaluated")
 
 
 def check_dev_revision_storage(segment: dict) -> None:
