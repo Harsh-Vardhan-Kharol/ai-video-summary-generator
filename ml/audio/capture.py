@@ -84,6 +84,8 @@ def make_audio_chunks(
         raise ValueError("audio data must not be empty")
     if captured_at.tzinfo is None:
         raise ValueError("captured_at must include a timezone")
+    if not source.strip():
+        raise ValueError("source must not be empty")
     session_id = str(uuid.UUID(session_id))
     frame_bytes = channels * BYTES_PER_SAMPLE
     if len(pcm_s16le) % frame_bytes:
@@ -103,6 +105,8 @@ def make_audio_chunks(
         chunk_id = str(uuid.uuid4())
         event_id = str(uuid.uuid4())
         chunk_path = chunk_directory / f"{session_id}_{sequence:04d}.pcm"
+        # The sequence is part of the filename so a retry for a session cannot
+        # silently replace a chunk from a different session.
         chunk_path.write_bytes(payload)
         chunks.append(
             AudioChunk(
@@ -150,14 +154,17 @@ def capture_microphone(
     session_id = str(uuid.UUID(session_id)) if session_id else str(uuid.uuid4())
     frame_count = math.ceil(duration_seconds * sample_rate_hz)
     started_at = datetime.now(timezone.utc)
-    recorded = sd.rec(
-        frame_count,
-        samplerate=sample_rate_hz,
-        channels=CHANNELS,
-        dtype="float32",
-        device=device,
-        blocking=True,
-    )
+    try:
+        recorded = sd.rec(
+            frame_count,
+            samplerate=sample_rate_hz,
+            channels=CHANNELS,
+            dtype="float32",
+            device=device,
+            blocking=True,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"microphone recording failed: {exc}") from exc
     pcm_data = float_samples_to_pcm16le(recorded.reshape(-1).tolist())
 
     output_wav = Path(output_wav)
