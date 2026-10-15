@@ -85,7 +85,7 @@ async def request_validation_error(
 ) -> JSONResponse:
     """Return the project error envelope for malformed API input."""
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
