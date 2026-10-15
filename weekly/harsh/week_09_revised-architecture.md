@@ -72,6 +72,45 @@ derived retrieval mechanism, the graph remains lightweight and explainable,
 and public clients continue to use the versioned backend API. The revised
 model changes data semantics, not the chosen service topology.
 
+## Architecture deltas from Week 8
+
+The following changes are now part of the reference architecture rather than
+optional implementation details:
+
+| Concern | Earlier assumption | Revised architecture rule |
+| --- | --- | --- |
+| Transcript identity | A segment could be treated as the latest text | `(segment_id, revision)` is immutable evidence; the latest revision is a derived current view |
+| Speaker identity | A speaker label could be passed downstream as an identity | `speaker_label` is session-local; person resolution is separate and reviewable |
+| Derived records | A summary or action item could remain valid after source correction | Source revision changes create a `needs_review` dependency edge |
+| Search indexes | An embedding could be treated as canonical content | Embeddings are replaceable projections keyed to a stored record and evidence revision |
+| Citations | A record ID was sufficient for a citation | A citation includes session, segment, revision, and time range |
+
+These deltas preserve the existing modular deployment plan while making the
+evidence lifecycle explicit. A worker may be introduced later for re-indexing
+or re-evaluation, but no worker is allowed to discard the immutable source
+history.
+
+## Traceability rules for implementation
+
+1. A consumer must key idempotency and deduplication on `event_id`, while
+   transcript history is keyed on `(segment_id, revision)`.
+2. A consumer that stores a derived record must persist the exact evidence
+   revision it used; storing only `segment_id` is insufficient.
+3. Retrieval must filter out `superseded` derived records by default and must
+   expose `needs_review` or incomplete evidence in the answer metadata.
+4. A graph relationship may reference a local speaker label only as a
+   session-scoped observation. It may reference a person node only after an
+   explicit identity-resolution step.
+5. Any breaking interpretation change requires a new internal
+   `schema_version`; additive optional fields can remain backward compatible.
+
+## Deployment compatibility note
+
+The first deployment can keep storage, graph linking, indexing, and RAG in
+one FastAPI process with background tasks. The event boundaries above are the
+stable seam: moving any stage to a queue or separate worker must preserve the
+same identifiers, revision handling, and evidence references.
+
 ## WEEK OUTPUT CONTRACT
 
 **Input:** The Week 8 diarization-aware model and the Week 2 service contract.

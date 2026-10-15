@@ -41,6 +41,40 @@ The team will proceed with the following data and architecture rules:
 | Evidence-required RAG citations | Approved | Required for auditable answers to users and faculty |
 | Graph as a lightweight derived relationship layer | Approved | Keeps the system simple and explainable |
 
+## Scope of this sign-off
+
+This is an architecture and contract sign-off, not a claim that production
+workers or real provider output are complete. It authorizes Sprint 3 schema
+work to proceed against the revised model and records the conditions under
+which a later implementation may change it.
+
+### Approved implementation constraints
+
+- Sprint 3 schemas must retain source segment revisions even if the first
+  database implementation stores JSON arrays for convenience.
+- Any current-view query must have a deterministic rule for selecting the
+  latest accepted revision; callers must not select an arbitrary row.
+- RAG responses must be able to distinguish current evidence from
+  `needs_review` evidence before rendering a citation to the user.
+- Graph and vector indexes must be rebuildable from PostgreSQL records. They
+  are derived projections, not the only copy of a fact.
+- Provider-specific fields may be mapped at the adapter boundary, but a
+  provider change must not leak into the public `/v1` response contract.
+
+### Sign-off conditions for implementation review
+
+The design remains approved provided that Sprint 3 implementation review can
+demonstrate all of the following with fixtures:
+
+1. two revisions of one segment remain queryable for audit;
+2. an anonymous speaker label does not create a global person edge;
+3. a corrected source marks a dependent record for re-evaluation; and
+4. a returned citation identifies the session, segment revision, and time
+   range used to support the answer.
+
+If any condition cannot be met, the owner must record a versioned contract
+change and update the integration check before changing the design.
+
 ## Outstanding validation, not a blocker to design
 
 The current checkout still has no real ASR fixture. When it is supplied, the
