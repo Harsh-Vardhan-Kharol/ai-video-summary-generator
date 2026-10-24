@@ -19,7 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 NLP_DIR = REPO_ROOT / "ml" / "nlp"
 sys.path.insert(0, str(NLP_DIR))
 
-from prompt_evaluation import evaluate_fixture  # noqa: E402
+from week3_prompt_evaluation import evaluate_fixture  # noqa: E402
 
 
 def main() -> int:

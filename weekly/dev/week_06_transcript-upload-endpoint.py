@@ -25,10 +25,10 @@ from backend.app.main import app  # noqa: E402
 
 
 def main() -> None:
-    """Run the Week 6 API slice locally for a manual contract check."""
-    import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=False)
+    """Run an in-process contract check; deployment runs the ASGI app."""
+    paths = {route.path for route in app.routes}
+    assert "/v1/transcript-segments" in paths
+    print("[PASS] Dev Week 6: transcript upload route is registered")
 
 
 if __name__ == "__main__":

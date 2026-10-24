@@ -25,8 +25,12 @@ from backend.app.main import app  # noqa: E402
 
 
 def main() -> None:
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=False)
+    from backend.app.database import open_fixture_database
+
+    connection = open_fixture_database()
+    tables = {row["name"] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    assert {"sessions", "transcript_segments", "speaker_attributions"}.issubset(tables)
+    print(f"[PASS] Dev Week 8: database contract initialized ({len(tables)} tables)")
 
 
 if __name__ == "__main__":

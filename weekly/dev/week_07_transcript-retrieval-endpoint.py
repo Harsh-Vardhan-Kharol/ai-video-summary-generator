@@ -24,8 +24,9 @@ from backend.app.main import app  # noqa: E402
 
 
 def main() -> None:
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=False)
+    paths = {route.path for route in app.routes}
+    assert "/v1/sessions/{session_id}/transcript-segments" in paths
+    print("[PASS] Dev Week 7: transcript retrieval route is registered")
 
 
 if __name__ == "__main__":

@@ -118,3 +118,76 @@ CREATE TABLE IF NOT EXISTS domain_events (
 
 CREATE INDEX IF NOT EXISTS idx_domain_events_session_created
     ON domain_events(session_id, created_at, event_id);
+
+-- Harsh's evidence-backed knowledge graph.  IDs remain text at this boundary
+-- so the graph can link the existing UUID and fixture segment identifiers.
+CREATE TABLE IF NOT EXISTS graph_entities (
+    entity_id TEXT PRIMARY KEY,
+    origin_session_id TEXT,
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('person', 'topic', 'decision')),
+    display_name TEXT NOT NULL CHECK (length(trim(display_name)) > 0),
+    aliases TEXT NOT NULL DEFAULT '[]',
+    properties TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'needs_review', 'superseded')),
+    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+    producer TEXT NOT NULL,
+    producer_version TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS graph_action_items (
+    action_item_id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    description TEXT NOT NULL CHECK (length(trim(description)) > 0),
+    owner_entity_id TEXT REFERENCES graph_entities(entity_id),
+    owner_status TEXT NOT NULL CHECK (owner_status IN ('assigned', 'unassigned', 'uncertain')),
+    due_at TEXT,
+    due_date_text TEXT,
+    status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN ('open', 'in_progress', 'blocked', 'completed', 'cancelled', 'needs_review')),
+    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+    related_decision_id TEXT REFERENCES graph_entities(entity_id),
+    properties TEXT NOT NULL DEFAULT '{}',
+    producer TEXT NOT NULL,
+    producer_version TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    CHECK (owner_status <> 'assigned' OR owner_entity_id IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS graph_evidence (
+    evidence_id TEXT PRIMARY KEY,
+    record_type TEXT NOT NULL CHECK (record_type IN ('entity', 'action_item')),
+    record_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    segment_id TEXT NOT NULL,
+    segment_revision INTEGER NOT NULL CHECK (segment_revision > 0),
+    start_ms INTEGER,
+    end_ms INTEGER,
+    UNIQUE (record_type, record_id, segment_id, segment_revision),
+    FOREIGN KEY (segment_id, segment_revision)
+        REFERENCES transcript_segments(segment_id, revision) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS graph_relationships (
+    relationship_id TEXT PRIMARY KEY,
+    source_entity_id TEXT NOT NULL REFERENCES graph_entities(entity_id),
+    relationship_type TEXT NOT NULL CHECK (relationship_type IN (
+        'mentions', 'about', 'supports', 'contradicts', 'supersedes', 'parent_of', 'related_to'
+    )),
+    target_entity_id TEXT NOT NULL REFERENCES graph_entities(entity_id),
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'needs_review', 'superseded')),
+    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+    evidence TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    CHECK (source_entity_id <> target_entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS graph_entities_type_status_idx ON graph_entities(entity_type, status);
+CREATE INDEX IF NOT EXISTS graph_evidence_segment_idx ON graph_evidence(segment_id, segment_revision);
+CREATE INDEX IF NOT EXISTS graph_relationship_source_idx ON graph_relationships(source_entity_id, relationship_type);
+CREATE INDEX IF NOT EXISTS graph_relationship_target_idx ON graph_relationships(target_entity_id, relationship_type);
+CREATE INDEX IF NOT EXISTS graph_action_owner_status_idx ON graph_action_items(owner_entity_id, status);

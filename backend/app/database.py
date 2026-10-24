@@ -60,7 +60,9 @@ def open_postgres_database(database_url: str | None = None) -> Any:
             "Install backend/requirements.txt before starting the API."
         ) from error
 
-    connection = psycopg.connect(url, autocommit=True)
+    from psycopg.rows import dict_row
+
+    connection = psycopg.connect(url, autocommit=True, row_factory=dict_row)
     with connection.cursor() as cursor:
         cursor.execute(POSTGRES_SCHEMA_PATH.read_text(encoding="utf-8"))
     return connection
