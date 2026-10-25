@@ -12,7 +12,10 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-import week5_final_prompt_templates as prompts
+try:  # Support package imports and the original direct-script workflow.
+    from . import week5_final_prompt_templates as prompts
+except ImportError:  # pragma: no cover - exercised by weekly direct runners
+    import week5_final_prompt_templates as prompts
 
 
 JsonGenerator = Callable[[list[dict[str, str]]], str | Mapping[str, Any]]
