@@ -82,15 +82,19 @@ def align_segments(asr: list[TranscriptSegment], diarization: list[DiarizationSe
     consumers must not interpret the primary label as proof that only one
     person spoke.
     """
+    # Provider adapters are external boundaries. Fail early on malformed
+    # intervals instead of silently creating misleading evidence.
+    asr = sorted(asr, key=lambda item: (item.start_ms, item.end_ms, item.segment_id))
+    diarization = sorted(diarization, key=lambda item: (item.start_ms, item.end_ms, item.segment_id))
     turns = []
     for index, segment in enumerate(asr):
         matches = [(overlap_ms(segment.start_ms, segment.end_ms, item.start_ms, item.end_ms), item) for item in diarization]
         matches = [(score, item) for score, item in matches if score > 0]
         match = max(matches, key=lambda pair: (pair[0], pair[1].speaker, pair[1].segment_id))[1] if matches else None
-        overlapping_speakers = tuple(
+        overlapping_speakers = tuple(dict.fromkeys(
             item.speaker for score, item in matches
             if match is not None and item.segment_id != match.segment_id
-        )
+        ))
         secondary_ranges = sorted(
             (max(segment.start_ms, item.start_ms), min(segment.end_ms, item.end_ms))
             for score, item in matches

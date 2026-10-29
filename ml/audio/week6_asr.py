@@ -71,6 +71,8 @@ class WhisperTranscriber:
         self._model: Any = None
 
     def transcribe(self, audio_path: Path) -> list[TranscriptSegment]:
+        if not Path(audio_path).is_file():
+            raise FileNotFoundError(audio_path)
         try:
             import whisper
         except ImportError as exc:
@@ -98,6 +100,8 @@ class DeepgramTranscriber:
         self.api_key, self.model, self.endpoint = api_key, model, endpoint
 
     def transcribe(self, audio_path: Path) -> list[TranscriptSegment]:
+        if not Path(audio_path).is_file():
+            raise FileNotFoundError(audio_path)
         audio = Path(audio_path).read_bytes()
         request = Request(
             f"{self.endpoint}?model={self.model}&utterances=true&punctuate=true",

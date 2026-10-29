@@ -23,8 +23,31 @@ class AudioQualityMetadata:
     clipping_ratio: float
     source: str
 
+    @property
+    def quality_flags(self) -> tuple[str, ...]:
+        """Human-readable triage flags; these are not model probabilities."""
+        flags: list[str] = []
+        if self.silence_ratio >= 0.95:
+            flags.append("mostly_silent")
+        elif self.silence_ratio >= 0.70:
+            flags.append("low_signal")
+        if self.clipping_ratio > 0:
+            flags.append("clipping")
+        return tuple(flags)
+
+    @property
+    def quality_score(self) -> float:
+        """Bounded, explainable score for routing/review, not accuracy."""
+        score = 1.0 - min(1.0, self.silence_ratio)
+        if self.clipping_ratio:
+            score *= max(0.0, 1.0 - self.clipping_ratio)
+        return round(score, 4)
+
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        result = asdict(self)
+        result["quality_flags"] = list(self.quality_flags)
+        result["quality_score"] = self.quality_score
+        return result
 
 
 def pcm16_quality(
@@ -63,6 +86,11 @@ def overlap_pairs(segments: Iterable[dict[str, Any]]) -> list[tuple[str, str]]:
     """Return deterministic pairs of intervals with positive intersection."""
     materialized = list(segments)
     pairs: list[tuple[str, str]] = []
+    for segment in materialized:
+        if not str(segment.get("segment_id", "")).strip():
+            raise ValueError("each segment must have a segment_id")
+        if int(segment["start_ms"]) < 0 or int(segment["end_ms"]) <= int(segment["start_ms"]):
+            raise ValueError("segment interval must satisfy 0 <= start_ms < end_ms")
     for index, left in enumerate(materialized):
         for right in materialized[index + 1:]:
             if min(int(left["end_ms"]), int(right["end_ms"])) > max(int(left["start_ms"]), int(right["start_ms"])):

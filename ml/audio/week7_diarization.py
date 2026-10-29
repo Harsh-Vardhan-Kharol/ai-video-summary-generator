@@ -32,6 +32,8 @@ class DiarizationSegment:
             raise ValueError("diarization timestamps must satisfy 0 <= start_ms < end_ms")
         if not self.speaker.strip():
             raise ValueError("speaker label must not be empty")
+        if self.confidence is not None and not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("confidence must be between 0 and 1")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

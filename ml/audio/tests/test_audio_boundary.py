@@ -1,5 +1,5 @@
 from ml.audio.playback_sync import PlaybackSegment, segment_at
-from ml.audio.preprocess import normalize_pcm16le, remove_dc_offset
+from ml.audio.preprocess import normalize_pcm16le, prepare_pcm_for_asr, remove_dc_offset
 from ml.audio.quality import overlap_pairs, pcm16_quality
 from ml.audio.week6_asr import TranscriptSegment
 from ml.audio.week7_diarization import DiarizationSegment
@@ -51,3 +51,17 @@ def test_overlap_pairs_are_deterministic():
         {"segment_id": "b", "start_ms": 50, "end_ms": 120},
         {"segment_id": "c", "start_ms": 120, "end_ms": 200},
     ]) == [("a", "b")]
+
+
+def test_preprocessing_gates_quiet_noise_but_preserves_signal():
+    pcm = b"\x64\x00\x9c\xff" + b"\xb0\x04\x50\xfb"
+    prepared = prepare_pcm_for_asr(pcm, noise_threshold=0.01)
+    values = [int.from_bytes(prepared[index:index + 2], "little", signed=True) for index in range(0, len(prepared), 2)]
+    assert values[:2] == [0, 0]
+    assert max(abs(value) for value in values[2:]) > 0
+
+
+def test_quality_report_exposes_review_flags():
+    report = pcm16_quality(b"\xff\x7f" * 4, sample_rate_hz=1000).to_dict()
+    assert "clipping" in report["quality_flags"]
+    assert 0 <= report["quality_score"] <= 1
