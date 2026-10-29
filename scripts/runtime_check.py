@@ -28,5 +28,7 @@ if __name__ == "__main__":
             revision=1, is_final=True, start_ms=0, end_ms=500,
             speaker_id="SPEAKER_00", text="Runtime check passed.", asr_confidence=1.0,
         )
-        print(f"[PASS] PostgreSQL schema and round trip ({len(tables)} tables)")
+        matches = repository.embeddings.search("runtime check", session_ids=["runtime-check-session"])
+        assert matches and matches[0].segment_id == "runtime-check-segment"
+        print(f"[PASS] PostgreSQL schema, transcript, and embedding round trip ({len(tables)} tables)")
 

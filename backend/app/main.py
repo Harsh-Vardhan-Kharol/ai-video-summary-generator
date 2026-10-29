@@ -3,13 +3,18 @@
 from datetime import datetime
 from typing import Literal
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
 from backend.app.transcript_store import StaleTranscriptRevisionError
-from backend.app.transcript_repository import SessionNotFoundError, transcript_repository
+from backend.app.transcript_repository import (
+    SessionNotFoundError,
+    SummaryValidationError,
+    transcript_repository,
+)
 from backend.app.graph_repository import GraphRepository, GraphValidationError
 from backend.app.rag import GroundedRAG
 
@@ -66,6 +71,36 @@ class TranscriptSegmentResponse(TranscriptSegmentPayload):
 class TranscriptRetrievalResponse(BaseModel):
     session_id: str
     segments: list[TranscriptSegmentResponse]
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    title: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    segment_count: int
+
+
+class SummaryWriteRequest(BaseModel):
+    summary_id: str = Field(min_length=1)
+    version: int = Field(ge=1)
+    text: str
+    source_segment_ids: list[str] = Field(default_factory=list)
+    is_final: bool = False
+    created_at: datetime
+
+    @model_validator(mode="after")
+    def validate_evidence(self) -> "SummaryWriteRequest":
+        if self.text.strip() and not self.source_segment_ids:
+            raise ValueError("a non-empty summary requires source_segment_ids")
+        if len(self.source_segment_ids) != len(set(self.source_segment_ids)):
+            raise ValueError("source_segment_ids must not contain duplicates")
+        return self
+
+
+class SummaryResponse(SummaryWriteRequest):
+    session_id: str
 
 
 class EvidenceRefPayload(BaseModel):
@@ -161,6 +196,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
 
 @app.get("/health", response_model=HealthResponse, tags=["operations"])
 def health() -> HealthResponse:
@@ -220,6 +263,13 @@ async def session_not_found(_request: object, _exc: SessionNotFoundError) -> JSO
     })
 
 
+@app.exception_handler(SummaryValidationError)
+async def summary_validation_error(_request: object, exc: SummaryValidationError) -> JSONResponse:
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={
+        "error": {"code": "SUMMARY_VALIDATION_ERROR", "message": str(exc), "fields": [], "retryable": False}
+    })
+
+
 @app.post(
     "/v1/transcript-segments",
     response_model=TranscriptUploadResponse,
@@ -262,6 +312,40 @@ def retrieve_transcript_segments(session_id: str, include_revisions: bool = Fals
         session_id=session_id,
         segments=[TranscriptSegmentResponse(**record.__dict__) for record in records],
     )
+
+
+@app.get("/v1/sessions", response_model=list[SessionResponse], tags=["sessions"])
+def list_sessions() -> list[SessionResponse]:
+    """List persisted meeting sessions for the dashboard."""
+    return [SessionResponse(**record) for record in transcript_repository.list_sessions()]
+
+
+@app.post("/v1/sessions/{session_id}/summaries", response_model=SummaryResponse, status_code=status.HTTP_201_CREATED, tags=["summaries"])
+def save_summary(session_id: str, summary: SummaryWriteRequest) -> SummaryResponse:
+    """Store Garvit's evidence-linked running or final summary."""
+    stored = transcript_repository.save_summary(
+        session_id=session_id,
+        **summary.model_dump(mode="json"),
+    )
+    return SummaryResponse(**stored.__dict__)
+
+
+@app.get("/v1/sessions/{session_id}/summaries/latest", response_model=SummaryResponse | None, tags=["summaries"])
+def retrieve_latest_summary(session_id: str) -> SummaryResponse | None:
+    """Return the most recently stored summary, if the producer has emitted one."""
+    summary = transcript_repository.latest_summary(session_id)
+    return SummaryResponse(**summary.__dict__) if summary else None
+
+
+@app.get("/v1/semantic-search", tags=["embeddings"])
+def semantic_search(
+    question: str = Query(min_length=1),
+    session_ids: list[str] = Query(default_factory=list),
+    top_k: int = Query(default=8, ge=1, le=20),
+) -> dict[str, object]:
+    """Expose Dev's derived vector-index seam for retrieval integration tests."""
+    matches = transcript_repository.embeddings.search(question, session_ids=session_ids, top_k=top_k)
+    return {"matches": [match.__dict__ for match in matches], "model": "hashing-v1"}
 
 
 @app.exception_handler(GraphValidationError)

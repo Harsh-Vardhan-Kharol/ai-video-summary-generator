@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS transcript_segments (
     text TEXT NOT NULL,
     asr_confidence DOUBLE PRECISION CHECK (asr_confidence IS NULL OR (asr_confidence >= 0 AND asr_confidence <= 1)),
     created_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (segment_id, revision)
+    PRIMARY KEY (session_id, segment_id, revision)
 );
 
 CREATE INDEX IF NOT EXISTS idx_transcript_segments_session_time
@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_transcript_segments_session_time
 
 CREATE TABLE IF NOT EXISTS speaker_attributions (
     attribution_id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
     segment_id TEXT NOT NULL,
     segment_revision INTEGER NOT NULL,
     speaker_label TEXT NOT NULL,
@@ -41,12 +42,12 @@ CREATE TABLE IF NOT EXISTS speaker_attributions (
         CHECK (resolution_status IN ('unresolved', 'resolved', 'rejected')),
     overlaps_attribution_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL,
-    FOREIGN KEY (segment_id, segment_revision)
-        REFERENCES transcript_segments(segment_id, revision) ON DELETE CASCADE
+    FOREIGN KEY (session_id, segment_id, segment_revision)
+        REFERENCES transcript_segments(session_id, segment_id, revision) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_speaker_attributions_segment_revision
-    ON speaker_attributions(segment_id, segment_revision);
+    ON speaker_attributions(session_id, segment_id, segment_revision);
 
 CREATE TABLE IF NOT EXISTS summaries (
     summary_id TEXT NOT NULL,
@@ -87,13 +88,14 @@ CREATE TABLE IF NOT EXISTS derived_records (
 
 CREATE TABLE IF NOT EXISTS derived_record_evidence (
     record_id TEXT NOT NULL REFERENCES derived_records(record_id) ON DELETE CASCADE,
+    session_id TEXT NOT NULL,
     segment_id TEXT NOT NULL,
     segment_revision INTEGER NOT NULL,
     start_ms INTEGER NOT NULL CHECK (start_ms >= 0),
     end_ms INTEGER NOT NULL CHECK (end_ms >= start_ms),
-    PRIMARY KEY (record_id, segment_id, segment_revision),
-    FOREIGN KEY (segment_id, segment_revision)
-        REFERENCES transcript_segments(segment_id, revision) ON DELETE RESTRICT
+    PRIMARY KEY (record_id, session_id, segment_id, segment_revision),
+    FOREIGN KEY (session_id, segment_id, segment_revision)
+        REFERENCES transcript_segments(session_id, segment_id, revision) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS domain_events (
@@ -109,14 +111,15 @@ CREATE INDEX IF NOT EXISTS idx_domain_events_session_created
     ON domain_events(session_id, created_at, event_id);
 
 CREATE TABLE IF NOT EXISTS transcript_embeddings (
+    session_id TEXT NOT NULL,
     segment_id TEXT NOT NULL,
     segment_revision INTEGER NOT NULL,
     embedding vector(1536) NOT NULL,
     model TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (segment_id, segment_revision),
-    FOREIGN KEY (segment_id, segment_revision)
-        REFERENCES transcript_segments(segment_id, revision) ON DELETE CASCADE
+    PRIMARY KEY (session_id, segment_id, segment_revision),
+    FOREIGN KEY (session_id, segment_id, segment_revision)
+        REFERENCES transcript_segments(session_id, segment_id, revision) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_transcript_embeddings_vector
@@ -167,9 +170,9 @@ CREATE TABLE IF NOT EXISTS graph_evidence (
     segment_revision INTEGER NOT NULL CHECK (segment_revision > 0),
     start_ms INTEGER,
     end_ms INTEGER,
-    UNIQUE (record_type, record_id, segment_id, segment_revision),
-    FOREIGN KEY (segment_id, segment_revision)
-        REFERENCES transcript_segments(segment_id, revision) ON DELETE RESTRICT
+    UNIQUE (record_type, record_id, session_id, segment_id, segment_revision),
+    FOREIGN KEY (session_id, segment_id, segment_revision)
+        REFERENCES transcript_segments(session_id, segment_id, revision) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS graph_relationships (
@@ -185,7 +188,7 @@ CREATE TABLE IF NOT EXISTS graph_relationships (
 );
 
 CREATE INDEX IF NOT EXISTS graph_entities_type_status_idx ON graph_entities(entity_type, status);
-CREATE INDEX IF NOT EXISTS graph_evidence_segment_idx ON graph_evidence(segment_id, segment_revision);
+CREATE INDEX IF NOT EXISTS graph_evidence_segment_idx ON graph_evidence(session_id, segment_id, segment_revision);
 CREATE INDEX IF NOT EXISTS graph_relationship_source_idx ON graph_relationships(source_entity_id, relationship_type);
 CREATE INDEX IF NOT EXISTS graph_relationship_target_idx ON graph_relationships(target_entity_id, relationship_type);
 CREATE INDEX IF NOT EXISTS graph_action_owner_status_idx ON graph_action_items(owner_entity_id, status);
